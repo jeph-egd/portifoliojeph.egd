@@ -1,154 +1,735 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeph Eugência Digital - Transformando presença digital em resultados reais</title>
-    <link rel="stylesheet" href="styles.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rastreador de Hábitos - Jeph Eugência Digital</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --background: #F3F4F6;
+      --foreground: #1E3A8A;
+      --card: #FFFFFF;
+      --border: #D1D5DB;
+      --primary: #1E3A8A;
+      --secondary: #10B981;
+      --accent: #EF4444;
+      --muted: #6B7280;
+    }
+    [data-theme="dark"] {
+      --background: #0F172A;
+      --foreground: #F8FAFC;
+      --card: #1E293B;
+      --border: #334155;
+      --primary: #10B981;
+      --secondary: #3B82F6;
+      --accent: #EF4444;
+      --muted: #CBD5E1;
+    }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .bg-white {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    [data-theme="dark"] .bg-white {
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      box-shadow: 0 2px 12px rgba(16, 185, 129, 0.2);
+    }
+    .text-blue-900 {
+      color: var(--primary);
+    }
+    [data-theme="dark"] .text-blue-900 {
+      color: var(--foreground);
+    }
+    .border-blue-900 {
+      border-color: var(--primary);
+    }
+    [data-theme="dark"] .border-blue-900 {
+      border-color: var(--secondary);
+    }
+    .text-gray-600, .text-gray-700 {
+      color: var(--muted);
+    }
+    [data-theme="dark"] .text-gray-600, [data-theme="dark"] .text-gray-700 {
+      color: var(--muted);
+    }
+    .bg-blue-900 {
+      background-color: var(--primary);
+    }
+    [data-theme="dark"] .bg-blue-900 {
+      background-color: var(--primary);
+    }
+    .bg-green-600 {
+      background-color: var(--secondary);
+    }
+    .bg-red-500 {
+      background-color: var(--accent);
+    }
+    input, textarea {
+      background-color: var(--card);
+      color: var(--foreground);
+      border-color: var(--border);
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+    input::placeholder, textarea::placeholder {
+      color: var(--muted);
+    }
+    input:focus, textarea:focus {
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .checkbox-custom {
+      width: 1.5rem;
+      height: 1.5rem;
+      cursor: pointer;
+      accent-color: var(--secondary);
+      border: 1px solid var(--border);
+      background-color: var(--card);
+    }
+    .checkbox-custom:checked {
+      background-color: var(--secondary);
+    }
+    #reminder-modal, #achievement-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 50;
+      justify-content: center;
+      align-items: center;
+    }
+    #reminder-modal.show, #achievement-modal.show {
+      display: flex;
+    }
+    #reminder-modal .bg-white, #achievement-modal .bg-white {
+      border-color: var(--secondary);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      position: relative;
+      padding: 0.25rem;
+      border-radius: 0.25rem;
+    }
+    .task-input, #new-task {
+      flex-grow: 1;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      background: var(--card);
+      color: var(--foreground);
+      font-size: 1rem;
+      transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
+                  box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
+                  color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      z-index: 10;
+    }
+    .task-input:hover, #new-task:hover,
+    .task-item:has(.checkbox-custom:checked) .task-input {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    .task-input:focus, #new-task:focus {
+      outline: none;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .remove-task {
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 1.25rem;
+      z-index: 10;
+    }
+    #add-task {
+      background: var(--primary);
+      transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 0.75rem 1.5rem;
+      min-height: 3rem;
+    }
+    #add-task:hover {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    }
+    .theme-toggle {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+    }
+    .theme-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #4B5563;
+      transition: 0.4s;
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 14px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: #F8FAFC;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    .slider:after {
+      content: "🌙";
+      color: #F8FAFC;
+      position: absolute;
+      right: 8px;
+    }
+    input:checked + .slider:after {
+      content: "🌞";
+      left: 8px;
+      right: auto;
+    }
+    input:checked + .slider {
+      background-color: var(--secondary);
+    }
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    @media (max-width: 640px) {
+      .task-item {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .task-input, #new-task {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+      }
+      .remove-task {
+        position: absolute;
+        top: 0.25rem;
+        right: 0.25rem;
+      }
+      #add-task {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+      }
+      table th, table td {
+        font-size: 0.75rem;
+        padding: 0.25rem;
+      }
+      .text-3xl {
+        font-size: 1.5rem;
+      }
+      .text-xl {
+        font-size: 1.125rem;
+      }
+      #reminder-modal .bg-white, #achievement-modal .bg-white {
+        padding: 1rem;
+      }
+    }
+  </style>
 </head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="nav-container">
-            <div class="logo">Jeph Eugência Digital</div>
-            <nav>
-                <ul class="nav-menu">
-                    <li><a href="#inicio">Início</a></li>
-                    <li><a href="#sobre">Sobre</a></li>
-                    <li><a href="#servicos">Serviços</a></li>
-                    <li><a href="#portfolio">Portfólio</a></li>
-                    <li><a href="#depoimentos">Depoimentos</a></li>
-                    <li><a href="#contato">Contato</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+<body class="font-sans">
+  <div class="container mx-auto p-2 sm:p-4 w-full max-w-4xl">
+    <div class="flex justify-end mb-2 sm:mb-4">
+      <label class="theme-toggle">
+        <input type="checkbox" id="theme-switch">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <h1 class="text-3xl font-bold text-center mb-4 text-blue-900">Rastreador de Hábitos - Jeph Eugência Digital</h1>
+    <p class="text-center text-gray-600 mb-4 sm:mb-6">Acompanhe seu progresso e tarefas de segunda a sexta por 4 semanas!</p>
 
-    <!-- Hero Section -->
-    <section id="inicio" class="hero">
-        <div class="hero-content">
-            <h1>Transformando presença digital em resultados reais.</h1>
-            <p>Especialista em WordPress e Marketing Digital com foco em performance e conversão</p>
-            <a href="https://wa.me/5511999999999?text=Olá! Gostaria de solicitar um orçamento." class="cta-button" target="_blank">Solicitar Orçamento</a>
-        </div>
-    </section>
+    <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6 border border-blue-900">
+      <label class="block mb-2 font-semibold text-blue-900">Nome do Hábito:</label>
+      <input id="habit-name" type="text" class="w-full p-3 border rounded text-base sm:text-lg" placeholder="Ex.: Beber 2L de água por dia">
 
-    <!-- About Section -->
-    <section id="sobre" class="section">
-        <h2>Sobre Jefferson</h2>
-        <div class="about-content">
-            <div class="about-image">
-                [Espaço para sua foto profissional]
-            </div>
-            <div class="about-text">
-                <p>Profissional com mais de 10 anos de experiência em criação de sites WordPress e 6 anos dedicados ao marketing digital. Especialista em estratégias que realmente convertem, combinando a excelência técnica na criação de sites responsivos com o domínio completo de tráfego pago (Meta Ads e Google Ads) e orgânico (SEO e redes sociais).</p>
-                
-                <p>Minha missão é transformar a presença digital dos meus clientes em resultados tangíveis, criando soluções personalizadas que não apenas impressionam visualmente, mas que efetivamente geram leads, vendas e crescimento sustentável para os negócios.</p>
+      <label class="block mt-4 mb-2 font-semibold text-blue-900">Meta Semanal:</label>
+      <input id="weekly-goal" type="text" class="w-full p-3 border rounded text-base sm:text-lg" placeholder="Ex.: Completar 4 de 5 dias">
 
-                <p>Cada projeto é uma oportunidade de aplicar estratégias data-driven e as melhores práticas do mercado para entregar não apenas um site, mas uma ferramenta poderosa de crescimento digital.</p>
-            </div>
-        </div>
-    </section>
+      <label class="block mt-4 mb-2 font-semibold text-blue-900">Recompensa por Meta:</label>
+      <input id="reward" type="text" class="w-full p-3 border rounded text-base sm:text-lg" placeholder="Ex.: Assistir um episódio da minha série">
 
-    <!-- Services Section -->
-    <section id="servicos" class="section services">
-        <h2>Serviços</h2>
-        <div class="services-grid">
-            <div class="service-card">
-                <h3>Criação de Sites WordPress Responsivos</h3>
-                <p>Sites profissionais, rápidos e otimizados para conversão. Design responsivo que funciona perfeitamente em todos os dispositivos, com foco em experiência do usuário e performance.</p>
-            </div>
-            <div class="service-card">
-                <h3>Gestão de Tráfego Pago</h3>
-                <p>Campanhas estratégicas no Meta Ads e Google Ads com foco em ROI. Análise contínua, otimização de performance e relatórios detalhados para maximizar seus resultados.</p>
-            </div>
-            <div class="service-card">
-                <h3>Estratégias de SEO e Presença Orgânica</h3>
-                <p>Posicionamento orgânico no Google e estratégias de conteúdo para redes sociais. Aumento da visibilidade online de forma sustentável e duradoura.</p>
-            </div>
-            <div class="service-card">
-                <h3>Análise de Marketing e Consultoria Digital</h3>
-                <p>Diagnóstico completo da sua presença digital, análise de concorrência e criação de estratégias personalizadas para alavancar seu negócio online.</p>
-            </div>
-        </div>
-    </section>
+      <label class="block mt-4 mb-2 font-semibold text-blue-900">Lembrete Diário (formato 24h):</label>
+      <input id="reminder-time" type="time" step="1" class="p-3 border rounded text-base sm:text-lg w-full" placeholder="Ex.: 14:00">
 
-    <!-- Portfolio Section -->
-    <section id="portfolio" class="section">
-        <h2>Portfólio</h2>
-        <div class="portfolio-grid">
-            <div class="portfolio-card">
-                <div class="portfolio-image">Site Clínica Médica</div>
-                <div class="portfolio-content">
-                    <h3>Clínica Saúde & Vida</h3>
-                    <p>Site institucional com sistema de agendamento online, otimizado para SEO e integrado com Google Ads. Aumento de 300% nas consultas online.</p>
-                </div>
-            </div>
-            <div class="portfolio-card">
-                <div class="portfolio-image">E-commerce Fashion</div>
-                <div class="portfolio-content">
-                    <h3>Loja Virtual ModaStyle</h3>
-                    <p>E-commerce completo com integração de pagamento, gestão de estoque e campanhas de remarketing. ROI de 450% em tráfego pago.</p>
-                </div>
-            </div>
-            <div class="portfolio-card">
-                <div class="portfolio-image">Landing Page</div>
-                <div class="portfolio-content">
-                    <h3>Lançamento Curso Digital</h3>
-                    <p>Landing page de alta conversão para lançamento de produto digital. Taxa de conversão de 12% e mais de R$ 500k em vendas.</p>
-                </div>
-            </div>
-            <div class="portfolio-card">
-                <div class="portfolio-image">Portal Corporativo</div>
-                <div class="portfolio-content">
-                    <h3>Portal Empresa Tech</h3>
-                    <p>Site corporativo com área restrita, blog integrado e estratégia de content marketing. Geração de 150+ leads qualificados mensais.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+      <label class="block mt-4 mb-2 font-semibold text-blue-900">Texto do Lembrete:</label>
+      <input id="reminder-text" type="text" maxlength="100" class="w-full p-3 border rounded text-base sm:text-lg" placeholder="Ex.: Hora de estudar com foco!">
 
-    <!-- Testimonials Section -->
-    <section id="depoimentos" class="section testimonials">
-        <h2>Depoimentos</h2>
-        <div class="testimonial-card">
-            <p>"O Jefferson transformou completamente nossa presença digital. Não apenas criou um site incrível, mas também estruturou nossas campanhas de tráfego pago de forma que triplicamos nossas vendas online em apenas 6 meses. Profissional excepcional!"</p>
-            <div class="testimonial-author">- Maria Silva, CEO da Silva & Associados</div>
-        </div>
-    </section>
+      <button id="set-reminder" class="mt-4 bg-blue-900 text-white px-4 py-3 rounded hover:bg-blue-800 w-full sm:w-auto text-base sm:text-lg">Definir Lembrete</button>
+    </div>
 
-    <!-- Contact Section -->
-    <section id="contato" class="section">
-        <div class="contact-content">
-            <h2>Contato</h2>
-            <h3>Vamos transformar seu projeto em realidade?</h3>
-            <p>Entre em contato e vamos discutir como posso ajudar a levar seu negócio para o próximo nível digital.</p>
-            
-            <a href="https://wa.me/5511999999999?text=Olá! Gostaria de conversar sobre meu projeto digital." class="cta-button" target="_blank" style="margin: 2rem 0; display: inline-block;">WhatsApp</a>
-            
-            <form class="contact-form">
-                <input type="text" placeholder="Seu nome" required>
-                <input type="email" placeholder="Seu e-mail" required>
-                <textarea placeholder="Conte-me sobre seu projeto" rows="5" required></textarea>
-                <button type="submit">Enviar Mensagem</button>
-            </form>
-        </div>
-    </section>
+    <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6 border border-blue-900">
+      <h2 class="text-xl font-semibold mb-4 text-blue-900">Progresso Mensal</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-center border-collapse min-w-[600px]">
+          <thead>
+            <tr class="bg-blue-900 text-white">
+              <th class="p-2 sm:p-3">Semana</th>
+              <th class="p-2 sm:p-3">Segunda</th>
+              <th class="p-2 sm:p-3">Terça</th>
+              <th class="p-2 sm:p-3">Quarta</th>
+              <th class="p-2 sm:p-3">Quinta</th>
+              <th class="p-2 sm:p-3">Sexta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="p-2 sm:p-3 font-semibold text-blue-900">Semana 1</td><td><input type="checkbox" class="checkbox-custom" data-week="1" data-day="1"></td><td><input type="checkbox" class="checkbox-custom" data-week="1" data-day="2"></td><td><input type="checkbox" class="checkbox-custom" data-week="1" data-day="3"></td><td><input type="checkbox" class="checkbox-custom" data-week="1" data-day="4"></td><td><input type="checkbox" class="checkbox-custom" data-week="1" data-day="5"></td></tr>
+            <tr><td class="p-2 sm:p-3 font-semibold text-blue-900">Semana 2</td><td><input type="checkbox" class="checkbox-custom" data-week="2" data-day="1"></td><td><input type="checkbox" class="checkbox-custom" data-week="2" data-day="2"></td><td><input type="checkbox" class="checkbox-custom" data-week="2" data-day="3"></td><td><input type="checkbox" class="checkbox-custom" data-week="2" data-day="4"></td><td><input type="checkbox" class="checkbox-custom" data-week="2" data-day="5"></td></tr>
+            <tr><td class="p-2 sm:p-3 font-semibold text-blue-900">Semana 3</td><td><input type="checkbox" class="checkbox-custom" data-week="3" data-day="1"></td><td><input type="checkbox" class="checkbox-custom" data-week="3" data-day="2"></td><td><input type="checkbox" class="checkbox-custom" data-week="3" data-day="3"></td><td><input type="checkbox" class="checkbox-custom" data-week="3" data-day="4"></td><td><input type="checkbox" class="checkbox-custom" data-week="3" data-day="5"></td></tr>
+            <tr><td class="p-2 sm:p-3 font-semibold text-blue-900">Semana 4</td><td><input type="checkbox" class="checkbox-custom" data-week="4" data-day="1"></td><td><input type="checkbox" class="checkbox-custom" data-week="4" data-day="2"></td><td><input type="checkbox" class="checkbox-custom" data-week="4" data-day="3"></td><td><input type="checkbox" class="checkbox-custom" data-week="4" data-day="4"></td><td><input type="checkbox" class="checkbox-custom" data-week="4" data-day="5"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="social-links">
-                <a href="#" target="_blank">Instagram</a>
-                <a href="#" target="_blank">Facebook</a>
-                <a href="#" target="_blank">LinkedIn</a>
-            </div>
-            <p>&copy; 2025 Jeph Eugência Digital. Todos os direitos reservados.</p>
-        </div>
-    </footer>
+    <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6 border border-blue-900">
+      <h2 class="text-xl font-semibold mb-4 text-blue-900">Tarefas Diárias (máximo 7)</h2>
+      <div class="flex flex-col sm:flex-row gap-2 mb-4">
+        <input id="new-task" type="text" class="w-full p-3 border rounded text-base sm:text-lg" placeholder="Ex.: Escrever post para redes sociais">
+        <button id="add-task" class="bg-blue-900 text-white px-4 py-3 rounded hover:bg-blue-800 text-base sm:text-lg">Adicionar Tarefa</button>
+      </div>
+      <div id="task-list"></div>
+    </div>
 
-    <script src="script.js"></script>
+    <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6 border border-blue-900">
+      <h2 class="text-xl font-semibold mb-4 text-blue-900">Reflexão Semanal</h2>
+      <div class="mb-4">
+        <label class="block font-semibold text-blue-900">Semana 1 - Como você se sentiu?</label>
+        <textarea id="reflection-1" class="w-full p-3 border rounded text-base sm:text-lg" rows="3" placeholder="Digite suas reflexões..."></textarea>
+      </div>
+      <div class="mb-4">
+        <label class="block font-semibold text-blue-900">Semana 2 - Como você se sentiu?</label>
+        <textarea id="reflection-2" class="w-full p-3 border rounded text-base sm:text-lg" rows="3" placeholder="Digite suas reflexões..."></textarea>
+      </div>
+      <div class="mb-4">
+        <label class="block font-semibold text-blue-900">Semana 3 - Como você se sentiu?</label>
+        <textarea id="reflection-3" class="w-full p-3 border rounded text-base sm:text-lg" rows="3" placeholder="Digite suas reflexões..."></textarea>
+      </div>
+      <div class="mb-4">
+        <label class="block font-semibold text-blue-900">Semana 4 - Como você se sentiu?</label>
+        <textarea id="reflection-4" class="w-full p-3 border rounded text-base sm:text-lg" rows="3" placeholder="Digite suas reflexões..."></textarea>
+      </div>
+    </div>
 
+    <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
+      <input id="import-file" type="file" accept=".json" class="hidden">
+      <button id="import-button" class="bg-blue-900 text-white px-4 py-3 rounded hover:bg-blue-800 text-base sm:text-lg">Importar Progresso</button>
+      <button id="export-button" class="bg-green-600 text-white px-4 py-3 rounded hover:bg-green-700 text-base sm:text-lg">Exportar Progresso (JSON)</button>
+      <button id="reset-button" class="bg-red-500 text-white px-4 py-3 rounded hover:bg-red-600 text-base sm:text-lg">Resetar Progresso</button>
+    </div>
+
+    <div id="reminder-modal">
+      <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md w-full border border-blue-900">
+        <h2 class="text-lg sm:text-xl font-semibold text-blue-900 mb-4">Lembrete do Hábito</h2>
+        <p id="reminder-modal-text" class="text-gray-700 mb-4 text-sm sm:text-base"></p>
+        <button id="close-reminder-modal" class="bg-blue-900 text-white px-4 py-3 rounded hover:bg-blue-800 w-full text-base sm:text-lg">Fechar</button>
+      </div>
+    </div>
+
+    <div id="achievement-modal">
+      <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md w-full border border-blue-900">
+        <h2 class="text-lg sm:text-xl font-semibold text-blue-900 mb-4">Conquista Desbloqueada!</h2>
+        <p class="text-gray-700 mb-4 text-sm sm:text-base">Parabéns, Jeph! Você completou todas as tarefas diárias!</p>
+        <button id="close-achievement-modal" class="bg-blue-900 text-white px-4 py-3 rounded hover:bg-blue-800 w-full text-base sm:text-lg">Fechar</button>
+      </div>
+    </div>
+
+    <audio id="reminder-sound" src="https://cdn.pixabay.com/audio/2023/03/25/audio_7b563aa359.mp3"></audio>
+
+    <p class="text-center text-blue-900 mt-4 sm:mt-6 italic text-sm sm:text-base">"Pequenos passos hoje levam a grandes conquistas amanhã! - Jeph Eugência Digital"</p>
+  </div>
+
+  <script>
+    let reminderInterval = null;
+    let tasks = [];
+
+    function loadData() {
+      const habitName = localStorage.getItem('habitName') || '';
+      const weeklyGoal = localStorage.getItem('weeklyGoal') || '';
+      const reward = localStorage.getItem('reward') || '';
+      const reminderTime = localStorage.getItem('reminderTime') || '';
+      const reminderText = localStorage.getItem('reminderText') || '';
+      const savedTasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
+      document.getElementById('habit-name').value = habitName;
+      document.getElementById('weekly-goal').value = weeklyGoal;
+      document.getElementById('reward').value = reward;
+      document.getElementById('reminder-time').value = reminderTime;
+      document.getElementById('reminder-text').value = reminderText;
+
+      for (let week = 1; week <= 4; week++) {
+        document.getElementById(`reflection-${week}`).value = localStorage.getItem(`reflection-${week}`) || '';
+        for (let day = 1; day <= 5; day++) {
+          const checkbox = document.querySelector(`input[data-week="${week}"][data-day="${day}"]`);
+          checkbox.checked = localStorage.getItem(`week${week}-day${day}`) === 'true';
+        }
+      }
+      tasks = savedTasks;
+      renderTasks();
+
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.getElementById('theme-switch').checked = savedTheme === 'dark';
+    }
+
+    function saveData() {
+      localStorage.setItem('habitName', document.getElementById('habit-name').value);
+      localStorage.setItem('weeklyGoal', document.getElementById('weekly-goal').value);
+      localStorage.setItem('reward', document.getElementById('reward').value);
+      localStorage.setItem('reminderTime', document.getElementById('reminder-time').value);
+      localStorage.setItem('reminderText', document.getElementById('reminder-text').value);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      for (let week = 1; week <= 4; week++) {
+        localStorage.setItem(`reflection-${week}`, document.getElementById(`reflection-${week}`).value);
+        for (let day = 1; day <= 5; day++) {
+          const checkbox = document.querySelector(`input[data-week="${week}"][data-day="${day}"]`);
+          localStorage.setItem(`week${week}-day${day}`, checkbox.checked);
+        }
+      }
+    }
+
+    function renderTasks() {
+      const taskList = document.getElementById('task-list');
+      taskList.innerHTML = '';
+      tasks.forEach((task, index) => {
+        const taskItem = document.createElement('div');
+        taskItem.className = 'task-item';
+        taskItem.innerHTML = `
+          <input type="checkbox" class="checkbox-custom" ${task.completed ? 'checked' : ''} onchange="updateTask(${index}, 'completed', this.checked)">
+          <input type="text" class="task-input" value="${task.text}" oninput="updateTask(${index}, 'text', this.value)">
+          <span class="remove-task" onclick="removeTask(${index})">×</span>
+        `;
+        taskList.appendChild(taskItem);
+      });
+    }
+
+    function addTask() {
+      const newTaskInput = document.getElementById('new-task');
+      const taskText = newTaskInput.value.trim();
+      if (taskText === '') {
+        alert('Por favor, insira uma tarefa.');
+        return;
+      }
+      if (tasks.length >= 7) {
+        alert('Limite de 7 tarefas atingido!');
+        return;
+      }
+      tasks.push({ text: taskText, completed: false });
+      newTaskInput.value = '';
+      saveData();
+      renderTasks();
+    }
+
+    function updateTask(index, field, value) {
+      tasks[index][field] = value;
+      saveData();
+      renderTasks();
+      checkAllTasksCompleted();
+    }
+
+    function removeTask(index) {
+      tasks.splice(index, 1);
+      saveData();
+      renderTasks();
+    }
+
+    function checkAllTasksCompleted() {
+      if (tasks.length > 0 && tasks.every(task => task.completed)) {
+        showAchievement();
+      }
+    }
+
+    function showAchievement() {
+      const modal = document.getElementById('achievement-modal');
+      modal.classList.add('show');
+    }
+
+    function closeAchievementModal() {
+      const modal = document.getElementById('achievement-modal');
+      modal.classList.remove('show');
+    }
+
+    function exportProgress() {
+      const data = {
+        habitName: document.getElementById('habit-name').value,
+        weeklyGoal: document.getElementById('weekly-goal').value,
+        reward: document.getElementById('reward').value,
+        reminderTime: document.getElementById('reminder-time').value,
+        reminderText: document.getElementById('reminder-text').value,
+        tasks: tasks,
+        progress: {},
+        reflections: {}
+      };
+      for (let week = 1; week <= 4; week++) {
+        data.progress[`week${week}`] = {};
+        for (let day = 1; day <= 5; day++) {
+          data.progress[`week${week}`][`day${day}`] = document.querySelector(`input[data-week="${week}"][data-day="${day}"]`).checked;
+        }
+        data.reflections[`week${week}`] = document.getElementById(`reflection-${week}`).value;
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'habit_progress.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importProgress(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        alert('Por favor, selecione um arquivo JSON.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data.habitName || !data.progress || !data.reflections) {
+            alert('Arquivo JSON inválido. Certifique-se de que é um arquivo de progresso válido.');
+            return;
+          }
+          document.getElementById('habit-name').value = data.habitName || '';
+          document.getElementById('weekly-goal').value = data.weeklyGoal || '';
+          document.getElementById('reward').value = data.reward || '';
+          document.getElementById('reminder-time').value = data.reminderTime || '';
+          document.getElementById('reminder-text').value = data.reminderText || '';
+          tasks = data.tasks || [];
+          for (let week = 1; week <= 4; week++) {
+            document.getElementById(`reflection-${week}`).value = data.reflections[`week${week}`] || '';
+            for (let day = 1; day <= 5; day++) {
+              const checkbox = document.querySelector(`input[data-week="${week}"][data-day="${day}"]`);
+              checkbox.checked = data.progress[`week${week}`] ? data.progress[`week${week}`][`day${day}`] || false : false;
+            }
+          }
+          saveData();
+          renderTasks();
+          if (data.reminderTime) {
+            if (reminderInterval) {
+              clearInterval(reminderInterval);
+              reminderInterval = null;
+            }
+            checkReminder();
+          }
+          checkAllTasksCompleted();
+          alert('Progresso importado com sucesso!');
+        } catch (error) {
+          console.error('Erro ao importar JSON:', error);
+          alert('Erro ao importar o arquivo JSON. Verifique o console para detalhes.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function setReminder() {
+      const reminderTime = document.getElementById('reminder-time').value;
+      const reminderText = document.getElementById('reminder-text').value;
+      if (!reminderTime) {
+        alert('Por favor, selecione um horário para o lembrete.');
+        return;
+      }
+      localStorage.setItem('reminderTime', reminderTime);
+      localStorage.setItem('reminderText', reminderText);
+      alert(`Lembrete configurado para ${reminderTime}! Mensagem: ${reminderText || 'Hora de trabalhar no seu hábito: ' + (document.getElementById('habit-name').value || 'Seu Hábito') + '!'}`);
+      if (reminderInterval) {
+        clearInterval(reminderInterval);
+      }
+      checkReminder();
+    }
+
+    function showReminder() {
+      const modal = document.getElementById('reminder-modal');
+      const modalText = document.getElementById('reminder-modal-text');
+      const reminderSound = document.getElementById('reminder-sound');
+      const reminderText = localStorage.getItem('reminderText') || `Hora de trabalhar no seu hábito: ${document.getElementById('habit-name').value || 'Seu Hábito'}!`;
+      modalText.textContent = reminderText;
+      modal.classList.add('show');
+      reminderSound.play().catch(error => {
+        console.error('Erro ao tocar som:', error);
+      });
+    }
+
+    function closeReminderModal() {
+      const modal = document.getElementById('reminder-modal');
+      modal.classList.remove('show');
+    }
+
+    function checkReminder() {
+      const reminderTime = localStorage.getItem('reminderTime');
+      if (!reminderTime) return;
+
+      const now = new Date();
+      const [hours, minutes, seconds] = reminderTime.split(':').map(Number);
+      const reminderDate = new Date();
+      reminderDate.setHours(hours, minutes, seconds || 0, 0);
+
+      const timeUntilReminder = reminderDate.getTime() - now.getTime();
+      if (timeUntilReminder < 0) {
+        reminderDate.setDate(reminderDate.getDate() + 1);
+      }
+
+      setTimeout(() => {
+        showReminder();
+        if (Notification.permission === 'granted') {
+          new Notification('Lembrete do Hábito!', {
+            body: localStorage.getItem('reminderText') || `Hora de trabalhar no seu hábito: ${document.getElementById('habit-name').value || 'Seu Hábito'}!`,
+            icon: 'https://via.placeholder.com/32'
+          });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification('Lembrete do Hábito!', {
+                body: localStorage.getItem('reminderText') || `Hora de trabalhar no seu hábito: ${document.getElementById('habit-name').value || 'Seu Hábito'}!`,
+                icon: 'https://via.placeholder.com/32'
+              });
+            }
+          });
+        }
+        reminderInterval = setInterval(() => {
+          showReminder();
+          if (Notification.permission === 'granted') {
+            new Notification('Lembrete do Hábito!', {
+              body: localStorage.getItem('reminderText') || `Hora de trabalhar no seu hábito: ${document.getElementById('habit-name').value || 'Seu Hábito'}!`,
+              icon: 'https://via.placeholder.com/32'
+            });
+          }
+        }, 24 * 60 * 60 * 1000);
+      }, timeUntilReminder > 0 ? timeUntilReminder : (24 * 60 * 60 * 1000 + timeUntilReminder));
+    }
+
+    function resetProgress() {
+      if (confirm('Tem certeza que deseja resetar todo o progresso?')) {
+        try {
+          localStorage.clear();
+          document.getElementById('habit-name').value = '';
+          document.getElementById('weekly-goal').value = '';
+          document.getElementById('reward').value = '';
+          document.getElementById('reminder-time').value = '';
+          document.getElementById('reminder-text').value = '';
+          document.querySelectorAll('.checkbox-custom').forEach(checkbox => {
+            checkbox.checked = false;
+          });
+          document.querySelectorAll('textarea').forEach(textarea => {
+            textarea.value = '';
+          });
+          tasks = [];
+          if (reminderInterval) {
+            clearInterval(reminderInterval);
+            reminderInterval = null;
+          }
+          closeReminderModal();
+          closeAchievementModal();
+          saveData();
+          renderTasks();
+          alert('Progresso resetado com sucesso!');
+        } catch (error) {
+          console.error('Erro ao resetar progresso:', error);
+          alert('Ocorreu um erro ao resetar o progresso. Verifique o console para detalhes.');
+        }
+      }
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      document.getElementById('theme-switch').checked = newTheme === 'dark';
+      localStorage.setItem('theme', newTheme);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      checkReminder();
+      document.getElementById('habit-name').addEventListener('input', saveData);
+      document.getElementById('weekly-goal').addEventListener('input', saveData);
+      document.getElementById('reward').addEventListener('input', saveData);
+      document.getElementById('reminder-time').addEventListener('input', saveData);
+      document.getElementById('reminder-text').addEventListener('input', saveData);
+      document.querySelectorAll('.checkbox-custom').forEach(checkbox => {
+        checkbox.addEventListener('change', saveData);
+      });
+      document.querySelectorAll('textarea').forEach(textarea => {
+        textarea.addEventListener('input', saveData);
+      });
+      document.getElementById('set-reminder').addEventListener('click', setReminder);
+      document.getElementById('close-reminder-modal').addEventListener('click', closeReminderModal);
+      document.getElementById('close-achievement-modal').addEventListener('click', closeAchievementModal);
+      document.getElementById('add-task').addEventListener('click', addTask);
+      document.getElementById('export-button').addEventListener('click', exportProgress);
+      document.getElementById('import-button').addEventListener('click', () => {
+        document.getElementById('import-file').click();
+      });
+      document.getElementById('import-file').addEventListener('change', importProgress);
+      document.getElementById('reset-button').addEventListener('click', resetProgress);
+      document.getElementById('theme-switch').addEventListener('change', toggleTheme);
+    });
+  </script>
 </body>
 </html>
