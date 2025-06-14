@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jeph Eugência Digital | Presença digital com resultados reais</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <a href="#" class="logo">Jeph Eugência Digital</a>
+      <button class="nav-toggle" onclick="toggleMenu()">☰</button>
+      <nav>
+        <ul id="navMenu">
+          <li><a href="#inicio">Início</a></li>
+          <li><a href="#servicos">Serviços</a></li>
+          <li><a href="#portfolio">Portfólio</a></li>
+          <li><a href="#contato">Contato</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" id="inicio">
+    <h1>Transformando presença digital em resultados reais</h1>
+    <p>Especialista em WordPress, tráfego pago e marketing de conteúdo. Mais de 10 anos entregando soluções digitais que geram crescimento.</p>
+    <div>
+      <a href="#contato" class="btn btn-primary">Solicitar Orçamento</a>
+      <a href="#portfolio" class="btn btn-outline">Ver Projetos</a>
+    </div>
+  </section>
+
+  <section class="section" id="servicos">
+    <h2 class="section-title">Serviços</h2>
+    <div class="services-grid">
+      <div class="service-card">
+        <h3>Desenvolvimento WordPress</h3>
+        <p>Sites rápidos, responsivos e otimizados para SEO. Foco em conversão e autoridade online.</p>
+      </div>
+      <div class="service-card">
+        <h3>Tráfego Pago</h3>
+        <p>Campanhas estratégicas no Google e Meta Ads com foco em resultados e ROI.</p>
+      </div>
+      <div class="service-card">
+        <h3>Marketing de Conteúdo</h3>
+        <p>Planejamento, análise e conteúdo que conecta sua marca ao público certo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="portfolio">
+    <h2 class="section-title">Portfólio</h2>
+    <div class="portfolio-grid">
+      <div class="portfolio-item">
+        <h3>Loja Virtual - Moda Sustentável</h3>
+        <p>WooCommerce, SEO e tráfego pago.</p>
+      </div>
+      <div class="portfolio-item">
+        <h3>Landing Page - SaaS</h3>
+        <p>Páginas de alta conversão com testes A/B.</p>
+      </div>
+      <div class="portfolio-item">
+        <h3>Site Institucional - Arquitetura</h3>
+        <p>WordPress com CRM e automação.</p>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="contato">
+  <h2 class="section-title">Fale comigo</h2>
+  <p class="contato-descricao">
+    Vamos conversar sobre seu projeto e como podemos alavancar seus resultados online.
+  </p>
+  <form onsubmit="return enviarFormulario(event)" class="form-contato">
+    <input id="nome" placeholder="Seu nome" required type="text" class="form-campo" />
+    <input id="email" placeholder="Seu email" required type="email" class="form-campo" />
+    <textarea id="mensagem" placeholder="Sua mensagem" required class="form-campo"></textarea>
+    <button class="btn btn-primary btn-enviar" type="submit">Enviar</button>
+  </form>
+</section>
+  <footer>
+    <p>© 2025 Jeph Eugência Digital. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

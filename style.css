@@ -1,0 +1,267 @@
+
+    /* Variáveis - Estilo híbrido */
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-light: #f9fafb;
+      --text-dark: #ffffff;
+      --text-light: #1e293b;
+      --primary: #00ff88;
+      --secondary: #00b8ff;
+      --purple: #8b5cf6;
+      --gray: #94a3b8;
+      --border: rgba(255,255,255,0.1);
+      --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+      --shadow-glow: 0 0 20px rgba(0, 255, 136, 0.3);
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-dark);
+      line-height: 1.6;
+      scroll-behavior: smooth;
+    }
+
+    header {
+      position: fixed;
+      width: 100%;
+      top: 0;
+      background: rgba(10, 10, 10, 0.95);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+    }
+
+    .header-container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    nav ul li a {
+      color: var(--gray);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    nav ul li a:hover {
+      color: var(--text-dark);
+    }
+
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      cursor: pointer;
+    }
+
+    .hero {
+      padding: 8rem 2rem 5rem;
+      text-align: center;
+      background: radial-gradient(ellipse at center, rgba(0, 255, 136, 0.1), transparent 80%);
+    }
+
+    .hero h1 {
+      font-size: 2.8rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero p {
+      max-width: 700px;
+      margin: auto;
+      color: var(--gray);
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.8rem 1.5rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      margin: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--gradient);
+      color: #000;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-outline {
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .section {
+      padding: 5rem 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .section-title {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .services-grid,
+    .portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .service-card,
+    .portfolio-item {
+      background: #111;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 2rem;
+      transition: 0.3s;
+    }
+
+    .service-card:hover,
+    .portfolio-item:hover {
+      transform: translateY(-10px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .service-card h3,
+    .portfolio-item h3 {
+      color: var(--text-dark);
+      margin-bottom: 1rem;
+    }
+
+    .service-card p,
+    .portfolio-item p {
+      color: var(--gray);
+    }
+
+    footer {
+      background: #000;
+      color: var(--gray);
+      text-align: center;
+      padding: 3rem 2rem 1rem;
+      margin-top: 4rem;
+    }
+
+    footer p {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      nav ul {
+        flex-direction: column;
+        background: #111;
+        position: absolute;
+        top: 60px;
+        right: 0;
+        width: 100%;
+        display: none;
+        padding: 1rem 0;
+      }
+
+      nav ul.active {
+        display: flex;
+      }
+
+      .nav-toggle {
+        display: block;
+      }
+    }
+
+/* Tipografia ajustada para a seção de contato */
+
+    #contato {
+      font-size: 1.125rem;
+    }
+
+    #contato h2.section-title {
+      font-size: 2.5rem;
+    }
+
+    #contato .contato-descricao {
+      text-align: center;
+      max-width: 600px;
+      margin: auto;
+      color: var(--text-secondary);
+      font-size: 1.125rem;
+    }
+
+    .form-contato {
+      max-width: 600px;
+      margin: 2rem auto 0;
+    }
+
+    .form-campo {
+      width: 100%;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      font-size: 1.1rem;
+    }
+
+    .btn-enviar {
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    #contato {
+      font-size: 1.125rem;
+    }
+
+    #contato h2.section-title {
+      font-size: 2.5rem;
+    }
+
+    #contato p {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+    }
+
+    #contato input,
+    #contato textarea,
+    #contato button {
+      font-size: 1.1rem;
+    }
